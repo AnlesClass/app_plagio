@@ -1,4 +1,6 @@
 import tkinter as tk # tkinter sirve para crear interfaces gráficas sencillas en Python.
+import pandas as pd
+from functions.button_functions.funciones import *
 
 # Configuración principal de la ventana
 root = tk.Tk() # Instancia. Crea una instancia de ventana
@@ -17,16 +19,16 @@ label_curso = tk.Label(root, text="Estadística y\nProbabilidades")
 
 label_registro = tk.Label(root, text="Registros del Examen")
 entry_registro = tk.Entry(root, border=2)
-button_registro = tk.Button(root, text="Examinar")
+button_registro = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(0,entry_registro))
 label_resultado = tk.Label(root, text="Resultados del Examen")
 entry_resultado = tk.Entry(root, border=2)
-button_resultado = tk.Button(root, text="Examinar")
+button_resultado = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(0,entry_resultado))
 label_tipo_salida = tk.Label(root, text="Tipo de Salida")
 combox_tipo_salida = tk.OptionMenu(root, opciones, *opciones_menu)
 label_ruta_salida = tk.Label(root, text="Ruta de Salida")
 entry_ruta_salida = tk.Entry(root, border=2)
-button_ruta_salida = tk.Button(root, text="Examinar")
-button_generar = tk.Button(root, text="Generar Gráficos")
+button_ruta_salida = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(1,entry_ruta_salida))
+button_generar = tk.Button(root, text="Generar Gráficos", command= lambda: generarExcel(entry_resultado.get(), entry_ruta_salida.get()))
 
 # Elementos Visuales - CONFIGURAR
 label_curso.configure(bg="#e6daba", foreground="#1f1d18", font=("Garamond", 20, "bold"))
