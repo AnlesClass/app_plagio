@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 ## Función para retornar la tabla Limpia de los Resultados
 def tabla_resultados(direccion):
     ## Cambiar la Ruta para el usuario
@@ -47,13 +46,13 @@ def tabla_resultados(direccion):
     ## Convertir todas las columnas de tipo float a enteros
     df = df.apply(lambda x: x.astype(int) if x.dtype == "float64" else x)
 
-    ## Mostrar DataFrame
+    ## Mostrar DataFrame Limpio
     return df
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## GRAFICAS PRUEBA
-def generar_regresion_lineal(direccion):
-    df = pd.read_excel("sadasd")
+def generar_regresion_lineal(data_frame, ruta_imagen):
+    df = data_frame
     ## conseguir los valores de la funcion linea  y  = ax + b  (en este caso obtenemos a y b)
     a, b = np.polyfit(df['Duración'], df['Calificación'], 1)
 
@@ -68,4 +67,4 @@ def generar_regresion_lineal(direccion):
     plt.xlabel('Duración (segundos)')
     plt.ylabel('Calificación')
     plt.legend()
-    plt.show()
+    plt.savefig(ruta_imagen, format='png')

@@ -28,7 +28,7 @@ combox_tipo_salida = tk.OptionMenu(root, opciones, *opciones_menu)
 label_ruta_salida = tk.Label(root, text="Ruta de Salida")
 entry_ruta_salida = tk.Entry(root, border=2)
 button_ruta_salida = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(1,entry_ruta_salida))
-button_generar = tk.Button(root, text="Generar Gráficos", command= lambda: generarExcel(entry_resultado.get(), entry_ruta_salida.get()))
+button_generar = tk.Button(root, text="Generar Gráficos", command= lambda: generarCarpeta(entry_resultado.get(), entry_ruta_salida.get()))
 
 # Elementos Visuales - CONFIGURAR
 label_curso.configure(bg="#e6daba", foreground="#1f1d18", font=("Garamond", 20, "bold"))
