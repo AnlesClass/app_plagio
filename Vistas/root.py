@@ -19,16 +19,24 @@ label_curso = tk.Label(root, text="Estadística y\nProbabilidades")
 
 label_registro = tk.Label(root, text="Registros del Examen")
 entry_registro = tk.Entry(root, border=2)
+# boton de examinar (Registro de examenes)
 button_registro = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(0,entry_registro))
 label_resultado = tk.Label(root, text="Resultados del Examen")
 entry_resultado = tk.Entry(root, border=2)
+# boton de examinar (Resultados del examen)
 button_resultado = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(0,entry_resultado))
 label_tipo_salida = tk.Label(root, text="Tipo de Salida")
 combox_tipo_salida = tk.OptionMenu(root, opciones, *opciones_menu)
 label_ruta_salida = tk.Label(root, text="Ruta de Salida")
 entry_ruta_salida = tk.Entry(root, border=2)
+# boton de seleccionar ruta de salida (donde se creara el archivo)
 button_ruta_salida = tk.Button(root, text="Examinar", command= lambda: seleccionar_ruta(1,entry_ruta_salida))
-button_generar = tk.Button(root, text="Generar Gráficos", command= lambda: generarCarpeta(entry_resultado.get(), entry_ruta_salida.get()))
+# Generar archivo
+button_generar = tk.Button(root, text="Generar Gráficos", command= lambda: generarCarpeta(entry_registro.get(),entry_resultado.get(), entry_ruta_salida.get()))
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Elementos Visuales - CONFIGURAR
 label_curso.configure(bg="#e6daba", foreground="#1f1d18", font=("Garamond", 20, "bold"))

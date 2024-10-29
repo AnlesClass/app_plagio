@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+
 ## Función para retornar la tabla Limpia de los Resultados
 def tabla_resultados(direccion):
     ## Cambiar la Ruta para el usuario
@@ -48,9 +53,11 @@ def tabla_resultados(direccion):
 
     ## Mostrar DataFrame Limpio
     return df
+
+
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## GRAFICAS PRUEBA
+## Grafico Regresion Lineal 
 def generar_regresion_lineal(data_frame, ruta_imagen):
     df = data_frame
     ## conseguir los valores de la funcion linea  y  = ax + b  (en este caso obtenemos a y b)
@@ -68,3 +75,64 @@ def generar_regresion_lineal(data_frame, ruta_imagen):
     plt.ylabel('Calificación')
     plt.legend()
     plt.savefig(ruta_imagen, format='png')
+
+## Grafico de Iforest
+def generar_iforest(data_frame, ruta_imagen):
+    df = data_frame
+    # Normalizar las características 'Duración' y 'Calificación'
+    scaler = StandardScaler()
+    df_scaled = pd.DataFrame(df[['Duración', 'Calificación']])
+
+    # Crear modelo Isolation Forest con diferentes niveles de contaminación
+    contaminaciones = [0.01, 0.05, 0.1] 
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)
+
+    for i, cont in enumerate(contaminaciones):
+        # Crear y entrenar el modelo Isolation Forest
+        model = IsolationForest(contamination=cont, random_state=42)
+        model.fit(df_scaled)
+
+        # Predecir anomalías
+        df['Anomalia'] = model.predict(df_scaled)
+
+        # Graficos
+        sns.scatterplot(
+            data=df, 
+            x='Duración', 
+            y='Calificación', 
+            hue='Anomalia', 
+            sizes=(20, 200), 
+            ax=axes[i], 
+            palette='coolwarm',
+            marker="x",
+            s=140
+        )
+        axes[i].set_title(f'Contaminación: {cont:.2f}')
+        axes[i].set_xlabel('Duración')
+        axes[i].set_ylabel('Calificación')
+        ## mostrar anomalias
+        anomalias = df[df['Anomalia'] == -1]
+        print(f"CONTAMINACIÓN {cont:.2f}\n{anomalias.to_string(index= False)}\n")
+    plt.tight_layout()
+    plt.savefig(ruta_imagen, format= "png")
+
+# Grafico polinomica
+def generar_polinomico(data_frame, ruta_imagen):
+    sns.lmplot(
+    data=data_frame,
+    x="Duración",
+    y="Calificación",
+    order=5,  # Ajuste polinómico de segundo grado
+    ci=None,  # Elimina el intervalo de confianza
+    )
+    plt.savefig(ruta_imagen, format="png")
+    
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Función para retornar la tabla Limpia de los Registro
+def tabla_registro(direccion):
+    df = pd.read_excel(direccion)
+    df =  df[df['Componente'] != 'Sistema']
+    df = df[df['Nombre del evento'] != 'Reporte de examen visto']
+    df = df.drop(['Contexto del evento','Dirección IP','Origen','Componente'], axis=1)
+    return df
