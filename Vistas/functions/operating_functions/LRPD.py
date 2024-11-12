@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+import random
 
-
-## Función para retornar la tabla Limpia de los Resultados
+#---LIMPIAR TABLA RESULTADOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def tabla_resultados(direccion):
     ## Cambiar la Ruta para el usuario
     df = pd.read_excel(direccion)
@@ -54,68 +54,7 @@ def tabla_resultados(direccion):
     ## Mostrar DataFrame Limpio
     return df
 
-
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-## Grafico Regresion Lineal 
-def generar_regresion_lineal(data_frame, ruta_imagen):
-    df = data_frame
-    ## conseguir los valores de la funcion linea  y  = ax + b  (en este caso obtenemos a y b)
-    a, b = np.polyfit(df['Duración'], df['Calificación'], 1)
-
-    # Forma de la funcion y = ax + b
-    y_pred = a * df['Duración'] + b
-
-    # Graficar
-    plt.figure(figsize=(10, 6))
-    plt.scatter(df['Duración'], df['Calificación'], color='blue', label='Datos originales')
-    plt.plot(df['Duración'], y_pred, color='red', label='Línea de regresión', linewidth=2)
-    plt.title('Regresión Lineal: Calificación - Duración')
-    plt.xlabel('Duración (segundos)')
-    plt.ylabel('Calificación')
-    plt.legend()
-    plt.savefig(ruta_imagen, format='png')
-
-## Grafico de Iforest
-def generar_iforest(data_frame, ruta_imagen):
-    df = data_frame
-    # Normalizar las características 'Duración' y 'Calificación'
-    scaler = StandardScaler()
-    df_scaled = pd.DataFrame(df[['Duración', 'Calificación']])
-
-    # Crear modelo Isolation Forest con diferentes niveles de contaminación
-    contaminaciones = [0.01, 0.05, 0.1] 
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)
-
-    for i, cont in enumerate(contaminaciones):
-        # Crear y entrenar el modelo Isolation Forest
-        model = IsolationForest(contamination=cont, random_state=42)
-        model.fit(df_scaled)
-
-        # Predecir anomalías
-        df['Anomalia'] = model.predict(df_scaled)
-
-        # Graficos
-        sns.scatterplot(
-            data=df, 
-            x='Duración', 
-            y='Calificación', 
-            hue='Anomalia', 
-            sizes=(20, 200), 
-            ax=axes[i], 
-            palette='coolwarm',
-            marker="x",
-            s=140
-        )
-        axes[i].set_title(f'Contaminación: {cont:.2f}')
-        axes[i].set_xlabel('Duración')
-        axes[i].set_ylabel('Calificación')
-        ## mostrar anomalias
-        anomalias = df[df['Anomalia'] == -1]
-        print(f"CONTAMINACIÓN {cont:.2f}\n{anomalias.to_string(index= False)}\n")
-    plt.tight_layout()
-    plt.savefig(ruta_imagen, format= "png")
+#---GRAFICOS DE RESULTADOS----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Grafico polinomica
 def generar_polinomico(data_frame, ruta_imagen):
@@ -127,12 +66,223 @@ def generar_polinomico(data_frame, ruta_imagen):
     ci=None,  # Elimina el intervalo de confianza
     )
     plt.savefig(ruta_imagen, format="png")
+
+## Grafico Regresion Lineal 
+def generar_regresion_lineal(data_frame, ruta_imagen):
+    df = data_frame
+    a, b = np.polyfit(df['Duración'], df['Calificación'], 1)
+    promedio_duracion =  df["Duración"].mean()
+    desviacion_duracion = df["Duración"].std()
+    promedio_calificacion =  df["Calificación"].mean()
+    desviacion_calificacion = df["Calificación"].std()
+    separacion= "____________________________________________"
+    informacion = f"""Coeficiente de correlación: {a:.4f}\n{separacion}
+        \nPromedio de Duración: {promedio_duracion:.2f}
+        \nDesviación estándar de Duración: {desviacion_duracion:.2f}\n{separacion}
+        \nPromedio de Calificación {promedio_calificacion:.2f}
+        \nDesviación estándar de Calificación: {desviacion_calificacion:.2f}"""    
+
+    sns.lmplot(
+        data=df,
+        x="Duración",
+        y="Calificación",
+        scatter_kws={'s': 50, 'alpha': 0.7},  
+        line_kws={'color': 'coral', 'linewidth': 2},  
+        height=8,
+        aspect=1.5  
+    )
+    plt.title("Regresion Lineal (Duración, Calificación)")
+
+    plt.text(
+        1, 0.5, informacion, 
+        transform=plt.gca().transAxes, 
+        fontsize=12, 
+        verticalalignment='center', 
+        horizontalalignment='left', 
+        bbox=dict(facecolor='white', alpha=0.7, edgecolor='gray', boxstyle='round,pad=0.5')
+    )
+    plt.tight_layout()    
+    plt.savefig(ruta_imagen, format='png')
+
+## Grafico de Iforest
+def generar_iforest(data_frame, ruta_imagen):
+    df = data_frame
+    # Normalizar las características 'Duración' y 'Calificación'
+    scaler = StandardScaler()
+    df_scaled = pd.DataFrame(df[['Duración', 'Calificación']])
     
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Crear modelo Isolation Forest con diferentes niveles de contaminación
+    contaminaciones = [0.01, 0.05, 0.1]
+    
+    # Crear la figura y los ejes con 2 filas y 3 columnas
+    fig, axes = plt.subplots(1, 3, figsize=(25, 10), sharex=True, sharey=True)
+    
+    for i, cont in enumerate(contaminaciones):
+        # Crear y entrenar el modelo Isolation Forest
+        model = IsolationForest(contamination=cont, random_state=42)
+        model.fit(df_scaled)
+        
+        # Predecir anomalías
+        df[f'Anomalia_{cont}'] = model.predict(df_scaled)
+        
+    
+        sns.scatterplot(
+            data=df, 
+            x='Duración', 
+            y='Calificación', 
+            hue=f'Anomalia_{cont}', 
+            sizes=(20, 200), 
+            ax=axes[i],  # Asigna el gráfico a la fila y columna correspondiente
+            palette='coolwarm',
+            marker="x",
+            s=140
+        )
+    
+        # Título y etiquetas del gráfico
+        axes[i].set_title(f'Contaminación: {cont}')
+        axes[i].set_xlabel('Duración')
+        axes[i].set_ylabel('Calificación')
+    
+        # Filtrar los estudiantes anómalos
+        anomalias = df[df[f'Anomalia_{cont}'] == -1]
+    
+        # Crear una tabla con los estudiantes anómalos
+        table_data = anomalias[['Nombre', 'Duración']]  # Puedes agregar más columnas si es necesario
+    
+        # Añadir la tabla debajo de cada gráfico
+        axes[i].table(cellText=table_data.values, 
+                                  colLabels=table_data.columns, 
+                                  loc='bottom', 
+                                  cellLoc='center', 
+                                  bbox=[0, -0.4, 1, 0.3])  # Ajustar la posición y tamaño de la tabla
+    
+    plt.tight_layout()
+    plt.savefig(ruta_imagen, format= "png")
+
+# Grafico polinomica
+def generar_polinomico(data_frame, ruta_imagen):
+    sns.lmplot(
+    data=data_frame,
+    x="Duración",
+    y="Calificación",
+    order=5, 
+    ci=None, 
+    )
+    plt.savefig(ruta_imagen, format="png")
+    
+#-------LIMPIAR TABLA REGISTRO-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 ## Función para retornar la tabla Limpia de los Registro
 def tabla_registro(direccion):
     df = pd.read_excel(direccion)
-    df =  df[df['Componente'] != 'Sistema']
-    df = df[df['Nombre del evento'] != 'Reporte de examen visto']
-    df = df.drop(['Contexto del evento','Dirección IP','Origen','Componente'], axis=1)
+
+    df = df[df['Nombre del evento'].isin(['Intento de examen iniciado', 'Intento de examen enviado', 'Intento de examen actualizado'])]
+
+    def convertir_hora(texto):
+        dato = texto.split()
+        horas = dato[1]
+        minutos = int(horas[3:5]) * 60
+        segundos = int(horas[6:8])
+        total = minutos + segundos
+        return total
+
+    df['Hora'] = df['Hora'].apply(convertir_hora)
+
+
+    def sacar_id(texto):
+        id ="" 
+        if "'" in texto[18:20]:
+            id = texto[18:19]
+        else:
+            id = texto[18:20]
+        return int(id)
+
+    df['Id'] = df['Descripción'].apply(sacar_id)
+    df = df.sort_values(by= 'Id')
+
+    def editar_descripcion(texto):
+        nueva_descripcion = ""
+        if "'" in texto[18:20]:
+            if texto[52:54] == '10':
+                nueva_descripcion += texto[52:54]
+            else:
+                nueva_descripcion += texto[52:53]
+        else: 
+            if texto[53:55] == '10':
+                nueva_descripcion += texto[53:55]
+            else:
+                nueva_descripcion += texto[53:54]
+        return nueva_descripcion
+
+    df['Descripción'] = df.apply(lambda x: editar_descripcion(x['Descripción']) if x['Nombre del evento'] == 'Intento de examen actualizado' else x['Descripción'], axis=1)
+
+    df.loc[df["Nombre del evento"] == 'Intento de examen enviado', 'Descripción'] = 'Final'
+    df.loc[df["Nombre del evento"] == 'Intento de examen iniciado', 'Descripción'] = 'Inicio'
+
+    df['Tiempo'] = df['Hora'].shift(1) - df['Hora']
+
+    df.loc[df['Descripción'] == '1', 'Tiempo'] = df['Hora'].shift(1) - df['Hora'].shift(-1) 
+    df.loc[df['Descripción'] == 'Final', 'Tiempo'] = 0
+    df.loc[df['Descripción'] == 'Inicio', 'Tiempo'] = 0
+
+    df['Tiempo'] = df['Tiempo'].astype(int)
+
+    df = df[df['Descripción'] != 'Final']
+    df = df[df['Descripción'] != 'Inicio']
+
+    df["Tiempo"] = df["Tiempo"].apply(lambda x: random.randint(16, 19)  if x < 0 else x)
+
+    df = df.rename(columns={'Nombre completo del usuario':'Usuario','Descripción':'Pregunta'})
+
+    df =  df.drop([1615,1613,1617,1600,1598,1596]) 
+    columna = df.pop('Id')  # Eliminar la columna 'B'
+    df.insert(0, 'Id', columna)  # Insertar 'B' en la primera posición (índice 0)
+
+    df = df.drop(['Hora','Contexto del evento', 'Usuario afectado', 'Dirección IP', 'Origen','Nombre del evento','Componente'], axis=1)
     return df
+
+
+#-------GRAFICOS DE REGISTRO-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Grafico de Mapa de Calor
+def generar_mapa_calor(data_frame, ruta_imagen):
+    df = data_frame
+
+    # Calcular el tiempo promedio por cada combinación de usuario y pregunta
+    pivot_table = df.pivot_table(values="Tiempo", index="Id", columns="Pregunta", aggfunc="mean")
+
+    # Graficar el heatmap
+    plt.figure(figsize=(15, 15))
+    sns.heatmap(pivot_table, cmap="YlGnBu", annot=True, fmt=".1f", cbar_kws={'label': 'Tiempo (segundos)'})
+    plt.title("Mapa de Calor del Tiempo Promedio por Usuario y Pregunta")
+    plt.xlabel("Pregunta")
+    plt.ylabel("Usuario")    
+    plt.savefig(ruta_imagen, format="png")
+
+# Grafico de Tabla de Tiempo
+def generar_tabla_tiempo(data_frame, ruta_imagen):
+    df = data_frame
+    # Asegurarse de que la columna 'Preguntas' esté en formato numérico
+    df['Pregunta'] = pd.to_numeric(df['Pregunta'], errors='coerce')
+
+    # Crear la tabla dinámica
+    pivot_table_sum = df.pivot_table(values="Tiempo", index="Usuario", columns="Pregunta", aggfunc="sum")
+
+    # Ordenar las columnas de las preguntas numéricamente
+    pivot_table_sum = pivot_table_sum[sorted(pivot_table_sum.columns)]
+
+    # Graficar el gráfico de barras apiladas
+    pivot_table_sum.plot(kind="bar", stacked=True, figsize=(14, 8), colormap="tab20")
+    plt.title("Tiempo Total por Usuario y Pregunta (Barras Apiladas)")
+    plt.xlabel("Usuario")
+    plt.ylabel("Tiempo (segundos)")
+    plt.legend(title="Pregunta", bbox_to_anchor=(1.05, 1), loc="upper left")
+    plt.tight_layout()
+    plt.savefig(ruta_imagen, format="png")
+
+
+
+        
+        
+    
+
