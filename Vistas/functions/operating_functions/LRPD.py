@@ -105,56 +105,59 @@ def generar_regresion_lineal(data_frame, ruta_imagen):
     plt.savefig(ruta_imagen, format='png')
 
 ## Grafico de Iforest
-def generar_iforest(data_frame, ruta_imagen):
+def generar_iforest(data_frame,data_action_result, ruta_imagen):
     df = data_frame
-    # Normalizar las características 'Duración' y 'Calificación'
-    scaler = StandardScaler()
-    df_scaled = pd.DataFrame(df[['Duración', 'Calificación']])
+    df_acciones = data_action_result
+    df_ids_unicos = df_acciones[['Id', 'Usuario']].drop_duplicates()
     
-    # Crear modelo Isolation Forest con diferentes niveles de contaminación
+    df_total = df_ids_unicos[df_ids_unicos['Usuario'].isin(df['Nombre'])] 
+    df_total = df_total.merge(df[['Nombre', 'Duración', 'Calificación']], 
+                              left_on='Usuario', 
+                              right_on='Nombre', 
+                              how='inner')
+    
+    df_total.drop(columns=['Nombre'], inplace=True)
+    
+    # Normalizar las características 'Duración' y 'Calificación' en df_total
+    scaler = StandardScaler()
+    df_scaled = scaler.fit_transform(df_total[['Duración', 'Calificación']])
+    
     contaminaciones = [0.01, 0.05, 0.1]
     
-    # Crear la figura y los ejes con 2 filas y 3 columnas
     fig, axes = plt.subplots(1, 3, figsize=(25, 10), sharex=True, sharey=True)
     
     for i, cont in enumerate(contaminaciones):
-        # Crear y entrenar el modelo Isolation Forest
         model = IsolationForest(contamination=cont, random_state=42)
         model.fit(df_scaled)
         
-        # Predecir anomalías
-        df[f'Anomalia_{cont}'] = model.predict(df_scaled)
+        df_total[f'Anomalia_{cont}'] = model.predict(df_scaled)
         
-    
         sns.scatterplot(
-            data=df, 
+            data=df_total, 
             x='Duración', 
             y='Calificación', 
             hue=f'Anomalia_{cont}', 
             sizes=(20, 200), 
-            ax=axes[i],  # Asigna el gráfico a la fila y columna correspondiente
+            ax=axes[i], 
             palette='coolwarm',
             marker="x",
             s=140
         )
     
-        # Título y etiquetas del gráfico
         axes[i].set_title(f'Contaminación: {cont}')
         axes[i].set_xlabel('Duración')
         axes[i].set_ylabel('Calificación')
     
-        # Filtrar los estudiantes anómalos
-        anomalias = df[df[f'Anomalia_{cont}'] == -1]
+        anomalias = df_total[df_total[f'Anomalia_{cont}'] == -1]
     
-        # Crear una tabla con los estudiantes anómalos
-        table_data = anomalias[['Nombre', 'Duración']]  # Puedes agregar más columnas si es necesario
+        table_data = anomalias[['Id', 'Duración', 'Calificación']] 
     
         # Añadir la tabla debajo de cada gráfico
         axes[i].table(cellText=table_data.values, 
-                                  colLabels=table_data.columns, 
-                                  loc='bottom', 
-                                  cellLoc='center', 
-                                  bbox=[0, -0.4, 1, 0.3])  # Ajustar la posición y tamaño de la tabla
+                      colLabels=table_data.columns, 
+                      loc='bottom', 
+                      cellLoc='center', 
+                      bbox=[0, -0.4, 1, 0.3])
     
     plt.tight_layout()
     plt.savefig(ruta_imagen, format= "png")
@@ -175,70 +178,45 @@ def generar_polinomico(data_frame, ruta_imagen):
 ## Función para retornar la tabla Limpia de los Registro
 def tabla_registro(direccion):
     df = pd.read_excel(direccion)
+    eventos_permitidos = ['Intento de examen iniciado', 'Intento de examen enviado', 'Intento de examen actualizado']
+    df = df[df['Nombre del evento'].isin(eventos_permitidos)]
 
-    df = df[df['Nombre del evento'].isin(['Intento de examen iniciado', 'Intento de examen enviado', 'Intento de examen actualizado'])]
+    df['Hora'] = df['Hora'].apply(lambda texto: int(texto.split()[1][3:5]) * 60 + int(texto.split()[1][6:8]))
 
-    def convertir_hora(texto):
-        dato = texto.split()
-        horas = dato[1]
-        minutos = int(horas[3:5]) * 60
-        segundos = int(horas[6:8])
-        total = minutos + segundos
-        return total
-
-    df['Hora'] = df['Hora'].apply(convertir_hora)
-
-
-    def sacar_id(texto):
-        id ="" 
-        if "'" in texto[18:20]:
-            id = texto[18:19]
-        else:
-            id = texto[18:20]
-        return int(id)
-
-    df['Id'] = df['Descripción'].apply(sacar_id)
-    df = df.sort_values(by= 'Id')
-
+    # Editar la descripción para preguntas específicas
     def editar_descripcion(texto):
-        nueva_descripcion = ""
-        if "'" in texto[18:20]:
-            if texto[52:54] == '10':
-                nueva_descripcion += texto[52:54]
-            else:
-                nueva_descripcion += texto[52:53]
-        else: 
-            if texto[53:55] == '10':
-                nueva_descripcion += texto[53:55]
-            else:
-                nueva_descripcion += texto[53:54]
-        return nueva_descripcion
+        index_start = 52 if "'" in texto[18:20] else 53
+        return texto[index_start:index_start + 2].strip("'") if texto[index_start:index_start + 2] == '10' else texto[index_start:index_start + 1]
 
-    df['Descripción'] = df.apply(lambda x: editar_descripcion(x['Descripción']) if x['Nombre del evento'] == 'Intento de examen actualizado' else x['Descripción'], axis=1)
+    df['Descripción'] = df.apply(
+        lambda x: editar_descripcion(x['Descripción']) if x['Nombre del evento'] == 'Intento de examen actualizado' else x['Descripción'], 
+        axis=1
+    )
 
-    df.loc[df["Nombre del evento"] == 'Intento de examen enviado', 'Descripción'] = 'Final'
-    df.loc[df["Nombre del evento"] == 'Intento de examen iniciado', 'Descripción'] = 'Inicio'
+    # Cambiar descripciones según evento
+    df.loc[df['Nombre del evento'] == 'Intento de examen enviado', 'Descripción'] = 'Final'
+    df.loc[df['Nombre del evento'] == 'Intento de examen iniciado', 'Descripción'] = 'Inicio'
 
+    # Calcular tiempos y ajustar valores
     df['Tiempo'] = df['Hora'].shift(1) - df['Hora']
+    df.loc[df['Descripción'] == '1', 'Tiempo'] = df['Hora'].shift(1) - df['Hora'].shift(-1)
+    df.loc[df['Descripción'].isin(['Final', 'Inicio']), 'Tiempo'] = 0
+    df['Tiempo'] = df['Tiempo'].apply(lambda x: random.randint(16, 19) if x < 0 else int(x))
 
-    df.loc[df['Descripción'] == '1', 'Tiempo'] = df['Hora'].shift(1) - df['Hora'].shift(-1) 
-    df.loc[df['Descripción'] == 'Final', 'Tiempo'] = 0
-    df.loc[df['Descripción'] == 'Inicio', 'Tiempo'] = 0
+    # Eliminar filas no deseadas
+    df = df[~df['Descripción'].isin(['Final', 'Inicio'])]
 
-    df['Tiempo'] = df['Tiempo'].astype(int)
+    # Renombrar columna
+    df = df.rename(columns={'Nombre completo del usuario': 'Usuario', 'Descripción': 'Pregunta'})
 
-    df = df[df['Descripción'] != 'Final']
-    df = df[df['Descripción'] != 'Inicio']
+    # Asignar IDs únicos a cada usuario
+    df['Id'] = df['Usuario'].map({usuario: idx for idx, usuario in enumerate(df['Usuario'].unique(), start=1)})
 
-    df["Tiempo"] = df["Tiempo"].apply(lambda x: random.randint(16, 19)  if x < 0 else x)
+    # Reorganizar columnas
+    df = df.drop([1615, 1613, 1617, 1600, 1598, 1596]) 
+    df = df[['Id', 'Usuario', 'Pregunta', 'Tiempo']]  
 
-    df = df.rename(columns={'Nombre completo del usuario':'Usuario','Descripción':'Pregunta'})
 
-    df =  df.drop([1615,1613,1617,1600,1598,1596]) 
-    columna = df.pop('Id')  # Eliminar la columna 'B'
-    df.insert(0, 'Id', columna)  # Insertar 'B' en la primera posición (índice 0)
-
-    df = df.drop(['Hora','Contexto del evento', 'Usuario afectado', 'Dirección IP', 'Origen','Nombre del evento','Componente'], axis=1)
     return df
 
 
@@ -266,7 +244,7 @@ def generar_tabla_tiempo(data_frame, ruta_imagen):
     df['Pregunta'] = pd.to_numeric(df['Pregunta'], errors='coerce')
 
     # Crear la tabla dinámica
-    pivot_table_sum = df.pivot_table(values="Tiempo", index="Usuario", columns="Pregunta", aggfunc="sum")
+    pivot_table_sum = df.pivot_table(values="Tiempo", index="Id", columns="Pregunta", aggfunc="sum")
 
     # Ordenar las columnas de las preguntas numéricamente
     pivot_table_sum = pivot_table_sum[sorted(pivot_table_sum.columns)]

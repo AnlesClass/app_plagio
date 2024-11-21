@@ -53,7 +53,7 @@ def generarCarpeta(primera_entrada,segunda_entrada, salida):
         
         # Agregar "Graficos de Iforest" a la carpeta "resultado de examen"
         ruta_Iforest = f"{ruta_principal}/{carpeta_resultado}/Iforest.png"
-        generar_iforest(tabla_resultados_limpios, ruta_Iforest)
+        generar_iforest(tabla_resultados_limpios,tabla_registros_limpios, ruta_Iforest)
         ruta_polinomica = f"{ruta_principal}/{carpeta_resultado}/Polinomica.png"
         generar_polinomico(tabla_resultados_limpios, ruta_polinomica)
 
